@@ -10,6 +10,7 @@
   \matrix (recipes) [column sep=1mm, row sep=0.5cm]{
 
     % Row raw : trigger (raw main input, or hand-off from a previous task)
+    \node[above] (RECINPUTS__raw){}; &
     \node[above] (RECmetis_ifu_lingain__raw){\recipebox{\RAW{DETLIN_IFU_RAW}}{\REC{metis_det_lingain}}}; &
     \node[above] (RECmetis_ifu_dark__raw){\recipebox{\RAW{DARK_IFU_RAW}}{\REC{metis_det_dark}}}; &
     \node[above] (RECmetis_ifu_distortion__raw){\recipebox{\RAW{IFU_DISTORTION_RAW}}{\REC{metis_ifu_distortion}}}; &
@@ -23,7 +24,8 @@
     \node[above] (RECmetis_ifu_postprocess__raw){\recipenotitlebox{\REC{metis_ifu_postprocess}}}; \\
 
     % Row Dbadpix_map_ifu : BADPIX_MAP_IFU
-    \node (RECmetis_ifu_lingain__Dbadpix_map_ifu)[extcalfile]{\EXTCALIB{BADPIX_MAP_IFU}}; &
+    \node (RECINPUTS__Dbadpix_map_ifu)[extcalfile]{\EXTCALIB{BADPIX_MAP_IFU}}; &
+    \node (RECmetis_ifu_lingain__Dbadpix_map_ifu)[connection]{}; &
     \node (RECmetis_ifu_dark__Dbadpix_map_ifu)[connection]{}; &
     \node (RECmetis_ifu_distortion__Dbadpix_map_ifu)[connection]{}; &
     \node (RECmetis_ifu_wavecal__Dbadpix_map_ifu)[connection]{}; &
@@ -36,7 +38,8 @@
     \node (RECmetis_ifu_postprocess__Dbadpix_map_ifu)[empty]{}; \\
 
     % Row Difu_wcu_off_raw : IFU_WCU_OFF_RAW
-    \node (RECmetis_ifu_lingain__Difu_wcu_off_raw)[extcalfile]{\EXTCALIB{IFU_WCU_OFF_RAW}}; &
+    \node (RECINPUTS__Difu_wcu_off_raw)[extcalfile]{\EXTCALIB{IFU_WCU_OFF_RAW}}; &
+    \node (RECmetis_ifu_lingain__Difu_wcu_off_raw)[connection]{}; &
     \node (RECmetis_ifu_dark__Difu_wcu_off_raw)[empty]{}; &
     \node (RECmetis_ifu_distortion__Difu_wcu_off_raw)[empty]{}; &
     \node (RECmetis_ifu_wavecal__Difu_wcu_off_raw)[empty]{}; &
@@ -49,6 +52,7 @@
     \node (RECmetis_ifu_postprocess__Difu_wcu_off_raw)[empty]{}; \\
 
     % Row Dmetis_ifu_lingain : metis_ifu_lingain
+    \node (RECINPUTS__Dmetis_ifu_lingain)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_lingain)[calibproduct]{\texttt{metis\_ifu\_lingain}}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_lingain)[connection]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_lingain)[connection]{}; &
@@ -62,6 +66,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_lingain)[empty]{}; \\
 
     % Row Dpersistence_map : PERSISTENCE_MAP
+    \node (RECINPUTS__Dpersistence_map)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dpersistence_map)[extcalfile]{\EXTCALIB{PERSISTENCE_MAP}}; &
     \node (RECmetis_ifu_dark__Dpersistence_map)[connection]{}; &
     \node (RECmetis_ifu_distortion__Dpersistence_map)[connection]{}; &
@@ -75,6 +80,7 @@
     \node (RECmetis_ifu_postprocess__Dpersistence_map)[empty]{}; \\
 
     % Row Dmetis_ifu_dark : metis_ifu_dark
+    \node (RECINPUTS__Dmetis_ifu_dark)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_dark)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_dark)[calibproduct]{\texttt{metis\_ifu\_dark}}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_dark)[connection]{}; &
@@ -88,6 +94,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_dark)[empty]{}; \\
 
     % Row Dpinhole_table : PINHOLE_TABLE
+    \node (RECINPUTS__Dpinhole_table)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dpinhole_table)[empty]{}; &
     \node (RECmetis_ifu_dark__Dpinhole_table)[extcalfile]{\EXTCALIB{PINHOLE_TABLE}}; &
     \node (RECmetis_ifu_distortion__Dpinhole_table)[connection]{}; &
@@ -101,6 +108,7 @@
     \node (RECmetis_ifu_postprocess__Dpinhole_table)[empty]{}; \\
 
     % Row Dmetis_ifu_distortion : metis_ifu_distortion
+    \node (RECINPUTS__Dmetis_ifu_distortion)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_distortion)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_distortion)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_distortion)[calibproduct]{\texttt{metis\_ifu\_distortion}}; &
@@ -114,6 +122,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_distortion)[empty]{}; \\
 
     % Row Dmetis_ifu_wavecal : metis_ifu_wavecal
+    \node (RECINPUTS__Dmetis_ifu_wavecal)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_wavecal)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_wavecal)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_wavecal)[empty]{}; &
@@ -127,6 +136,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_wavecal)[empty]{}; \\
 
     % Row Dmetis_ifu_rsrf : metis_ifu_rsrf
+    \node (RECINPUTS__Dmetis_ifu_rsrf)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_rsrf)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_rsrf)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_rsrf)[empty]{}; &
@@ -140,6 +150,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_rsrf)[empty]{}; \\
 
     % Row Difu_sky_raw : IFU_SKY_RAW
+    \node (RECINPUTS__Difu_sky_raw)[empty]{}; &
     \node (RECmetis_ifu_lingain__Difu_sky_raw)[empty]{}; &
     \node (RECmetis_ifu_dark__Difu_sky_raw)[empty]{}; &
     \node (RECmetis_ifu_distortion__Difu_sky_raw)[empty]{}; &
@@ -153,6 +164,7 @@
     \node (RECmetis_ifu_postprocess__Difu_sky_raw)[empty]{}; \\
 
     % Row Dmetis_ifu_std_reduce : metis_ifu_std_reduce
+    \node (RECINPUTS__Dmetis_ifu_std_reduce)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_std_reduce)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_std_reduce)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_std_reduce)[empty]{}; &
@@ -166,6 +178,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_std_reduce)[empty]{}; \\
 
     % Row Dmetis_ifu_sci_reduce : metis_ifu_sci_reduce
+    \node (RECINPUTS__Dmetis_ifu_sci_reduce)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_sci_reduce)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_sci_reduce)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_sci_reduce)[empty]{}; &
@@ -179,6 +192,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_sci_reduce)[empty]{}; \\
 
     % Row Dfluxstd_catalog : FLUXSTD_CATALOG
+    \node (RECINPUTS__Dfluxstd_catalog)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dfluxstd_catalog)[empty]{}; &
     \node (RECmetis_ifu_dark__Dfluxstd_catalog)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dfluxstd_catalog)[empty]{}; &
@@ -192,6 +206,7 @@
     \node (RECmetis_ifu_postprocess__Dfluxstd_catalog)[empty]{}; \\
 
     % Row Dlsf_kernel : LSF_KERNEL
+    \node (RECINPUTS__Dlsf_kernel)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dlsf_kernel)[empty]{}; &
     \node (RECmetis_ifu_dark__Dlsf_kernel)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dlsf_kernel)[empty]{}; &
@@ -205,6 +220,7 @@
     \node (RECmetis_ifu_postprocess__Dlsf_kernel)[empty]{}; \\
 
     % Row Datm_profile : ATM_PROFILE
+    \node (RECINPUTS__Datm_profile)[empty]{}; &
     \node (RECmetis_ifu_lingain__Datm_profile)[empty]{}; &
     \node (RECmetis_ifu_dark__Datm_profile)[empty]{}; &
     \node (RECmetis_ifu_distortion__Datm_profile)[empty]{}; &
@@ -218,6 +234,7 @@
     \node (RECmetis_ifu_postprocess__Datm_profile)[empty]{}; \\
 
     % Row Dmetis_ifu_sci_telluric : metis_ifu_sci_telluric
+    \node (RECINPUTS__Dmetis_ifu_sci_telluric)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_sci_telluric)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_sci_telluric)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_sci_telluric)[empty]{}; &
@@ -231,6 +248,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_sci_telluric)[empty]{}; \\
 
     % Row Dmetis_ifu_std_telluric : metis_ifu_std_telluric
+    \node (RECINPUTS__Dmetis_ifu_std_telluric)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_std_telluric)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_std_telluric)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_std_telluric)[empty]{}; &
@@ -244,6 +262,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_std_telluric)[empty]{}; \\
 
     % Row Dmetis_ifu_calibrate : metis_ifu_calibrate
+    \node (RECINPUTS__Dmetis_ifu_calibrate)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_calibrate)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_calibrate)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_calibrate)[empty]{}; &
@@ -257,6 +276,7 @@
     \node (RECmetis_ifu_postprocess__Dmetis_ifu_calibrate)[connection]{}; \\
 
     % Row Dmetis_ifu_postprocess : metis_ifu_postprocess
+    \node (RECINPUTS__Dmetis_ifu_postprocess)[empty]{}; &
     \node (RECmetis_ifu_lingain__Dmetis_ifu_postprocess)[empty]{}; &
     \node (RECmetis_ifu_dark__Dmetis_ifu_postprocess)[empty]{}; &
     \node (RECmetis_ifu_distortion__Dmetis_ifu_postprocess)[empty]{}; &
@@ -284,12 +304,14 @@
   \draw [arrow] (RECmetis_ifu_postprocess__raw) -- (RECmetis_ifu_postprocess__Dmetis_ifu_postprocess);
   \draw [arrow] (RECmetis_ifu_sci_reduce__Dmetis_ifu_sci_reduce) -| (RECmetis_ifu_calibrate__Dmetis_ifu_calibrate);
   \draw [arrow] (RECmetis_ifu_calibrate__Dmetis_ifu_calibrate) -| (RECmetis_ifu_postprocess__Dmetis_ifu_postprocess);
+  \draw [match, dashed] (RECINPUTS__Dbadpix_map_ifu) -- (RECmetis_ifu_lingain__Dbadpix_map_ifu);
   \draw [match, dashed] (RECmetis_ifu_lingain__Dbadpix_map_ifu) -- (RECmetis_ifu_dark__Dbadpix_map_ifu);
   \draw [match, dashed] (RECmetis_ifu_dark__Dbadpix_map_ifu) -- (RECmetis_ifu_distortion__Dbadpix_map_ifu);
   \draw [match, dashed] (RECmetis_ifu_distortion__Dbadpix_map_ifu) -- (RECmetis_ifu_wavecal__Dbadpix_map_ifu);
   \draw [match, dashed] (RECmetis_ifu_wavecal__Dbadpix_map_ifu) -- (RECmetis_ifu_rsrf__Dbadpix_map_ifu);
   \draw [match, dashed] (RECmetis_ifu_rsrf__Dbadpix_map_ifu) -- (RECmetis_ifu_std_reduce__Dbadpix_map_ifu);
   \draw [match, dashed] (RECmetis_ifu_std_reduce__Dbadpix_map_ifu) -- (RECmetis_ifu_sci_reduce__Dbadpix_map_ifu);
+  \draw [match] (RECINPUTS__Difu_wcu_off_raw) -- (RECmetis_ifu_lingain__Difu_wcu_off_raw);
   \draw [match] (RECmetis_ifu_lingain__Difu_wcu_off_raw) -- (RECmetis_ifu_rsrf__Difu_wcu_off_raw);
   \draw [match] (RECmetis_ifu_lingain__Dmetis_ifu_lingain) -- (RECmetis_ifu_dark__Dmetis_ifu_lingain);
   \draw [match] (RECmetis_ifu_dark__Dmetis_ifu_lingain) -- (RECmetis_ifu_distortion__Dmetis_ifu_lingain);

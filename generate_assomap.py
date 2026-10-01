@@ -11,7 +11,9 @@ Usage:
         generate_assomap.py metis.metis_ifu_wkf -i ~/Code/pipelines/metispipeline/metisp/workflows/
 
 Layout rules (mirroring the hand-drawn example):
-  - one column per task, in the order tasks appear in the workflow module
+  - one column per task, in the order tasks appear in the workflow module,
+    plus a leading inputs-only column if the first task has raw/reference
+    associated inputs (so its own trigger arrow doesn't cross their boxes)
   - row 1: each column's trigger -- \\recipebox{RAW}{recipe} if the task's
     main input is raw data, \\recipenotitlebox{recipe} if its main input is
     another task's product (drawn as an elbow arrow instead)
@@ -24,8 +26,8 @@ Classifying a DataSource as raw/static/external input is done from the
 Python variable name it is bound to in the workflow module (raw_* / static_*
 / everything else), since the edps object model does not otherwise
 distinguish them. A task's product is drawn as a scienceproduct if nothing
-else consumes it, or if its task name is listed in SCIENCE_PRODUCT_TASKS
-below -- otherwise it is drawn as an (intermediate) calibproduct.
+else consumes it, or if its task name matches one of the shell-style
+wildcard patterns in SCIENCE_PRODUCT_TASKS below -- otherwise it is drawn as an (intermediate) calibproduct.
 
 A task's own recipe/workflow definition never states its output's pro.catg
 directly -- the workflow instead tags it where it is *consumed*, e.g.
@@ -56,6 +58,7 @@ others; all draw solid unless *that* one call passed min_ret=0.
 """
 import argparse
 import ast
+import fnmatch
 import importlib
 import re
 import sys
@@ -75,10 +78,22 @@ KNOWN_WORKFLOW_ROOTS = {
     "metis": PIPELINES_ROOT / "metispipeline" / "metisp" / "workflows",
 }
 
-SCIENCE_PRODUCT_TASKS = {
-    "micado_spec_sci",
-    "micado_spec_mf_correct",
-}
+# Shell-style wildcard patterns (fnmatch: *, ?, [seq]; matched against the
+# whole task name, case-sensitively) for tasks whose product is drawn as a
+# scienceproduct even though something downstream consumes it.
+SCIENCE_PRODUCT_TASKS = [
+    "*_spec_sci",
+    "*_spec_mf_correct",
+]
+
+
+def is_science_product_task(name):
+    return any(fnmatch.fnmatchcase(name, pattern) for pattern in SCIENCE_PRODUCT_TASKS)
+
+
+# colkey of the leading inputs-only column inserted when the first task has
+# raw/reference inputs of its own (see build_model). Not a valid task slug.
+INPUTS_COLKEY = "INPUTS"
 
 
 def load_workflow(module_name, workflow_root):
@@ -333,9 +348,15 @@ def build_model(wkf):
                 # already ended above this row, since every column's own
                 # product row is created before any later column's rows), so
                 # this column's own header->product arrow doesn't run through
-                # the box. Fall back to the consuming column itself if there
-                # is no earlier column (nothing to shift into).
-                box_col = prev_colkey if prev_colkey is not None else colkey
+                # the box. The first task has no earlier column, so give it a
+                # leading inputs-only column (no recipe, no arrow) instead.
+                if prev_colkey is None:
+                    if INPUTS_COLKEY not in header:
+                        columns.insert(0, INPUTS_COLKEY)
+                        header[INPUTS_COLKEY] = ""
+                    box_col = INPUTS_COLKEY
+                else:
+                    box_col = prev_colkey
                 row, _ = get_or_create_row(item, False, box_col)
                 if box_col != colkey:
                     row["consumers"].append((colkey, groups))
@@ -356,7 +377,7 @@ def build_model(wkf):
             continue
         task = row["obj"]
         is_leaf = id(task) not in consumed_task_ids
-        row["style"] = "scienceproduct" if (is_leaf or task.name in SCIENCE_PRODUCT_TASKS) else "calibproduct"
+        row["style"] = "scienceproduct" if (is_leaf or is_science_product_task(task.name)) else "calibproduct"
         tag_pairs = product_output_tags(task, explicit_outputs)
         if tag_pairs is None:
             row["content_tags"] = None
