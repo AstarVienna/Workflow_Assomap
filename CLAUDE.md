@@ -27,14 +27,18 @@ and doesn't belong nested in one pipeline's repo.
   `KNOWN_WORKFLOW_ROOTS` in the script (pointing at sibling checkouts under
   `~/Code/pipelines/`). Add new pipelines there as needed.
 
-- `assomap.tex` / `assomap_metis.tex` -- standalone LaTeX wrappers
-  (`\documentclass[tikz,margin=5mm,dvipsnames]{standalone}`) that `\input`
-  the generated `*_assomap_tikz.tex` fragment plus the shared house style:
-  `assomap_common(.tex/_imports.tex)`, `black_style.tex`, `styles_data.tex`,
-  `normal_style.tex`, `recipe_config.tex`. Compile with plain `pdflatex`.
-
 - `micado_spec_assomap_tikz.tex`, `metis_ifu_assomap_tikz.tex` -- generated
   fragments, regenerate via the script rather than hand-editing.
+
+- `micado_spec_assomap.tex`, `metis_ifu_assomap.tex` -- standalone LaTeX
+  wrappers, also generated (`WRAPPER_TEMPLATE` / `render_wrapper()`; written
+  next to the fragment as its name minus `_tikz`; `--no-wrapper` skips).
+  They `\input` the fragment plus the shared house style:
+  `assomap_common(.tex/_imports.tex)`, `black_style.tex`, `styles_data.tex`,
+  `normal_style.tex`, `recipe_config.tex`. If `-o` puts the output outside
+  the script dir, the wrapper sets `\input@path` to the style dir so the
+  fragment's own `\input{black_style}` etc. still resolve. Compile with
+  plain `pdflatex` from the wrapper's directory.
 
 ## How output labelling works (and its limits)
 
@@ -97,7 +101,7 @@ not done yet as of this writing.
 Regenerate the fragment, then compile and grep/read the PDF:
 ```
 /Users/janus/miniconda3/envs/pyreduce_edps/bin/python3.12 generate_assomap.py <module>
-pdflatex -interaction=nonstopmode -halt-on-error assomap.tex   # or assomap_metis.tex
+pdflatex -interaction=nonstopmode -halt-on-error <leaf>_assomap.tex   # e.g. metis_ifu_assomap.tex
 ```
 Check `grep -c "^!" <name>.log` is 0, then visually read the resulting PDF.
 

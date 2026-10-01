@@ -312,12 +312,12 @@
   %% not by a fixed offset, so the dashed/solid line to them is level.
   \node (RECmicado_spec_mf_calctrans__Dmicado_spec_mf_model_3)[connection] at (RECmicado_spec_mf_model__Dmicado_spec_mf_model_3 -| RECmicado_spec_mf_calctrans__raw) {};
   \node (RECmicado_spec_mf_calctrans__Dmicado_spec_mf_model_2)[connection] at (RECmicado_spec_mf_model__Dmicado_spec_mf_model_2 -| RECmicado_spec_mf_calctrans__raw) {};
-  \node (RECmicado_spec_flux__Dmicado_spec_wave_2)[connection] at (RECmicado_spec_wave__Dmicado_spec_wave_2 -| RECmicado_spec_flux__raw) {};
-  \node (RECmicado_spec_sci__Dmicado_spec_wave_2)[connection] at (RECmicado_spec_wave__Dmicado_spec_wave_2 -| RECmicado_spec_sci__raw) {};
   \node (RECmicado_spec_flux__Dmicado_spec_wave_3)[connection] at (RECmicado_spec_wave__Dmicado_spec_wave_3 -| RECmicado_spec_flux__raw) {};
   \node (RECmicado_spec_sci__Dmicado_spec_wave_3)[connection] at (RECmicado_spec_wave__Dmicado_spec_wave_3 -| RECmicado_spec_sci__raw) {};
-  \node (RECmicado_spec_mf_correct__Dmicado_spec_sci_2)[connection] at (RECmicado_spec_sci__Dmicado_spec_sci_2 -| RECmicado_spec_mf_correct__raw) {};
+  \node (RECmicado_spec_flux__Dmicado_spec_wave_2)[connection] at (RECmicado_spec_wave__Dmicado_spec_wave_2 -| RECmicado_spec_flux__raw) {};
+  \node (RECmicado_spec_sci__Dmicado_spec_wave_2)[connection] at (RECmicado_spec_wave__Dmicado_spec_wave_2 -| RECmicado_spec_sci__raw) {};
   \node (RECmicado_spec_mf_correct__Dmicado_spec_sci_3)[connection] at (RECmicado_spec_sci__Dmicado_spec_sci_3 -| RECmicado_spec_mf_correct__raw) {};
+  \node (RECmicado_spec_mf_correct__Dmicado_spec_sci_2)[connection] at (RECmicado_spec_sci__Dmicado_spec_sci_2 -| RECmicado_spec_mf_correct__raw) {};
 
   %% Connections
   \draw [arrow] (RECmicado_gen_dark__raw) -- (RECmicado_gen_dark__Dmicado_gen_dark);
@@ -353,12 +353,12 @@
   \draw [match, dashed] (RECmicado_spec_flatfield__Draw_sflat_pinh) -- (RECmicado_spec_wave__Draw_sflat_pinh);
   \draw [match] (RECmicado_spec_flatfield__Dstatic_tw) -- (RECmicado_spec_wave__Dstatic_tw);
   \draw [match] (RECmicado_spec_flatfield__Dref_lamp_cat) -- (RECmicado_spec_wave__Dref_lamp_cat);
-  \draw [match] (RECmicado_spec_wave__Dmicado_spec_wave_2) -- (RECmicado_spec_flux__Dmicado_spec_wave_2);
-  \draw [match] (RECmicado_spec_flux__Dmicado_spec_wave_2) -- (RECmicado_spec_sci__Dmicado_spec_wave_2);
   \draw [match] (RECmicado_spec_wave__Dmicado_spec_wave_3) -- (RECmicado_spec_flux__Dmicado_spec_wave_3);
   \draw [match] (RECmicado_spec_flux__Dmicado_spec_wave_3) -- (RECmicado_spec_sci__Dmicado_spec_wave_3);
   \draw [match] (RECmicado_spec_wave__Dmicado_spec_wave) -- (RECmicado_spec_flux__Dmicado_spec_wave);
   \draw [match] (RECmicado_spec_flux__Dmicado_spec_wave) -- (RECmicado_spec_sci__Dmicado_spec_wave);
+  \draw [match] (RECmicado_spec_wave__Dmicado_spec_wave_2) -- (RECmicado_spec_flux__Dmicado_spec_wave_2);
+  \draw [match] (RECmicado_spec_flux__Dmicado_spec_wave_2) -- (RECmicado_spec_sci__Dmicado_spec_wave_2);
   \draw [match] (RECmicado_spec_wave__Draw_fstd_slit) -- (RECmicado_spec_flux__Draw_fstd_slit);
   \draw [match] (RECmicado_spec_wave__Dpsf_model) -- (RECmicado_spec_flux__Dpsf_model);
   \draw [match, dashed] (RECmicado_spec_wave__Dpsf_reconstructed) -- (RECmicado_spec_flux__Dpsf_reconstructed);
@@ -368,8 +368,8 @@
   \draw [match, dashed] (RECmicado_spec_flux__Draw_spec_sky) -- (RECmicado_spec_sci__Draw_spec_sky);
   \draw [match] (RECmicado_spec_sci__Dmicado_spec_sci) -- (RECmicado_spec_mf_calctrans__Dmicado_spec_sci);
   \draw [match] (RECmicado_spec_mf_calctrans__Dmicado_spec_sci) -- (RECmicado_spec_mf_correct__Dmicado_spec_sci);
-  \draw [match, dashed] (RECmicado_spec_sci__Dmicado_spec_sci_2) -- (RECmicado_spec_mf_correct__Dmicado_spec_sci_2);
   \draw [match, dashed] (RECmicado_spec_sci__Dmicado_spec_sci_3) -- (RECmicado_spec_mf_correct__Dmicado_spec_sci_3);
+  \draw [match, dashed] (RECmicado_spec_sci__Dmicado_spec_sci_2) -- (RECmicado_spec_mf_correct__Dmicado_spec_sci_2);
   \draw [match, dashed] (RECmicado_spec_sci__Dref_atmoline_cat) -- (RECmicado_spec_mf_model__Dref_atmoline_cat);
   \draw [match, dashed] (RECmicado_spec_mf_model__Dref_atmoline_cat) -- (RECmicado_spec_mf_calctrans__Dref_atmoline_cat);
   \draw [match, dashed] (RECmicado_spec_sci__Dstatic_lsf_kernel) -- (RECmicado_spec_mf_model__Dstatic_lsf_kernel);
