@@ -679,13 +679,17 @@ def main():
                              "module's top-level package via KNOWN_WORKFLOW_ROOTS, e.g. 'micado.foo' "
                              "-> micado-pipe/edps/workflow)")
     parser.add_argument("-o", "--output", type=Path, default=None,
-                         help="output .tex path (default: <script dir>/<last module component>_assomap_tikz.tex)")
+                         help="output .tex path, or an existing directory to write the default-named "
+                              "fragment into (default: "
+                              "<script dir>/out/<last module component>_assomap_tikz.tex)")
     parser.add_argument("--no-wrapper", action="store_true",
                         help="don't write the standalone LaTeX wrapper (by default written next to the "
                              "fragment as <name>_assomap.tex, i.e. the output name minus '_tikz')")
     args = parser.parse_args()
 
     script_dir = Path(__file__).resolve().parent
+    tex_dir = script_dir / "tex"  # shared house-style .tex files only
+    out_dir = script_dir / "out"  # generated fragments/wrappers + pdflatex output (gitignored)
     if args.input is not None:
         workflow_root = args.input
     else:
@@ -699,10 +703,14 @@ def main():
 
     wkf = load_workflow(args.workflow, workflow_root)
 
+    leaf = args.workflow.rsplit(".", 1)[-1].removesuffix("_wkf")
+    default_name = f"{leaf}_assomap_tikz.tex"
     output = args.output
     if output is None:
-        leaf = args.workflow.rsplit(".", 1)[-1].removesuffix("_wkf")
-        output = script_dir / f"{leaf}_assomap_tikz.tex"
+        out_dir.mkdir(exist_ok=True)
+        output = out_dir / default_name
+    elif output.is_dir():
+        output = output / default_name
 
     columns, header, rows, edges, node, elbow_dots, extra_dots = build_model(wkf)
     tex = render(columns, header, rows, edges, node, elbow_dots, extra_dots)
@@ -713,8 +721,8 @@ def main():
         stem = output.stem
         wrapper_stem = stem.removesuffix("_tikz") if stem.endswith("_tikz") else f"{stem}_standalone"
         wrapper = output.with_name(f"{wrapper_stem}.tex")
-        wrapper.write_text(render_wrapper(output, wrapper, script_dir))
-        print(f"wrote {wrapper} (compile with: pdflatex {wrapper.name})")
+        wrapper.write_text(render_wrapper(output, wrapper, tex_dir))
+        print(f"wrote {wrapper} (compile from {wrapper.parent} with: pdflatex {wrapper.name})")
 
 
 if __name__ == "__main__":

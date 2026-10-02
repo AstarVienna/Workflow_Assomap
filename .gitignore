@@ -12,3 +12,10 @@ __pycache__/
 *.pyc
 
 .DS_Store
+
+
+
+# Test/build output (generate with -o out, compile from out/)
+out/
+edps.log
+texput.log
