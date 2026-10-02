@@ -585,7 +585,8 @@ def _write_preamble(stream):
 
 def _write_recipe_matrix(stream, columns, header, rows, node, elbow_dots):
     begin = [r"  \matrix (recipes) [column sep=1mm, row sep=0.5cm]{", ""]
-    with _tex_group(stream, begin, ["  };    % end matrix", ""]):
+    end = [r"  };    % end matrix (recipes)", ""]
+    with _tex_group(stream, begin, end):
         _writelines(stream, "    % Row raw : trigger (raw main input, or hand-off from a previous task)")
         _write_matrix_row(stream, [rf"\node[above] ({node(c, 'raw')}){{{header[c]}}};" for c in columns])
         for row in rows:
@@ -648,7 +649,8 @@ def _write_legend(stream, header, rows):
         r"    column 2/.style={anchor=base west}]",
         r"  at ([yshift=0cm]current bounding box.south west){%",
     ]
-    with _tex_group(stream, begin, [r"  };    %% end matrix (legend)", ""]):
+    end = [r"  };    %% end matrix (legend)", ""]
+    with _tex_group(stream, begin, end):
         _writelines(
             stream,
             rf"    \node (leg_recipe) [recipe]{{{example_recipe}}};",
@@ -676,7 +678,8 @@ def render(stream: TextIO, columns, header, rows, edges, node, elbow_dots, extra
     """Write the complete TikZ fragment for a built model to `stream`."""
     _write_preamble(stream)
     begin = [r"\begin{tikzpicture}[on grid=false, node distance=0.8cm]", ""]
-    with _tex_group(stream, begin, [r"\end{tikzpicture}", ""]):
+    end = [r"\end{tikzpicture}", ""]
+    with _tex_group(stream, begin, end):
         _write_recipe_matrix(stream, columns, header, rows, node, elbow_dots)
         _write_extra_dots(stream, extra_dots)
         _write_edges(stream, edges)
