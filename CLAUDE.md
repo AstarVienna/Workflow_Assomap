@@ -27,16 +27,20 @@ and doesn't belong nested in one pipeline's repo.
   `KNOWN_WORKFLOW_ROOTS` in the script (pointing at sibling checkouts under
   `~/Code/pipelines/`). Add new pipelines there as needed.
 
-- `micado_spec_assomap_tikz.tex`, `metis_ifu_assomap_tikz.tex` -- generated
-  fragments, regenerate via the script rather than hand-editing.
+- `tex/` -- the shared house-style `.tex` files only (`tex_dir` in `main()`).
+  No generated files belong here.
 
-- `micado_spec_assomap.tex`, `metis_ifu_assomap.tex` -- standalone LaTeX
+- `out/` (gitignored) -- the script's default output dir (`out_dir`): generated
+  `<leaf>_assomap_tikz.tex` fragments (regenerate, don't hand-edit), plus
+  pdflatex's PDFs/logs.
+
+- `out/<leaf>_assomap.tex` -- standalone LaTeX
   wrappers, also generated (`WRAPPER_TEMPLATE` / `render_wrapper()`; written
   next to the fragment as its name minus `_tikz`; `--no-wrapper` skips).
   They `\input` the fragment plus the shared house style:
   `assomap_common(.tex/_imports.tex)`, `black_style.tex`, `styles_data.tex`,
   `normal_style.tex`, `recipe_config.tex`. If `-o` puts the output outside
-  the script dir, the wrapper sets `\input@path` to the style dir so the
+  `tex/`, the wrapper sets `\input@path` to the style dir so the
   fragment's own `\input{black_style}` etc. still resolve. Compile with
   plain `pdflatex` from the wrapper's directory.
 
@@ -98,12 +102,22 @@ not done yet as of this writing.
 
 ## Verifying changes
 
-Regenerate the fragment, then compile and grep/read the PDF:
+Run the test suite first (uses the frozen `example_workflow/` MICADO copy;
+`test/fixtures/inputs_first_wkf.py` covers the leading INPUTS column, which
+the example never triggers):
+```
+/Users/janus/miniconda3/envs/pyreduce_edps/bin/python3.12 -m pytest test -p no:cacheprovider
+```
+
+Generated files go to the gitignored `out/` (the default; `-o` also takes a
+directory). Compile from there, so no PDFs/logs land in the repo root or
+`tex/`:
 ```
 /Users/janus/miniconda3/envs/pyreduce_edps/bin/python3.12 generate_assomap.py <module>
-pdflatex -interaction=nonstopmode -halt-on-error <leaf>_assomap.tex   # e.g. metis_ifu_assomap.tex
+cd out && pdflatex -interaction=nonstopmode -halt-on-error <leaf>_assomap.tex   # e.g. metis_ifu_assomap.tex
 ```
-Check `grep -c "^!" <name>.log` is 0, then visually read the resulting PDF.
+Check `grep -c "^!" out/<name>.log` is 0, then visually read the resulting
+PDF.
 
 ## Pending
 

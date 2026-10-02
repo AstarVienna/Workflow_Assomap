@@ -42,24 +42,27 @@ package that can shadow the installed engine on the wrong interpreter.
 ## Usage
 
 ```sh
-# 1. Generate the TikZ fragment and its standalone LaTeX wrapper
+# 1. Generate the TikZ fragment and its standalone LaTeX wrapper (into out/)
 /path/to/edps_env/bin/python generate_assomap.py metis.metis_ifu_wkf
-#    -> metis_ifu_assomap_tikz.tex  (the diagram)
-#    -> metis_ifu_assomap.tex       (wrapper document)
+#    -> out/metis_ifu_assomap_tikz.tex  (the diagram)
+#    -> out/metis_ifu_assomap.tex       (wrapper document)
 
-# 2. Compile the wrapper
-pdflatex metis_ifu_assomap.tex
+# 2. Compile the wrapper from out/, so the PDF and logs stay there too
+cd out && pdflatex metis_ifu_assomap.tex
 ```
+
+`out/` is gitignored: everything generated lives there. `tex/` holds only
+the shared style files.
 
 | Option | Meaning |
 | --- | --- |
 | `workflow` | Dotted workflow module, e.g. `metis.metis_ifu_wkf` |
 | `-i`, `--input` | Directory holding the workflow definitions. Defaults to the entry for the module's top-level package in `KNOWN_WORKFLOW_ROOTS` |
-| `-o`, `--output` | Output fragment path. Defaults to `<script dir>/<module>_assomap_tikz.tex`. The wrapper is written next to it, with the same name minus `_tikz` |
+| `-o`, `--output` | Output fragment path, or an existing directory (e.g. `out`) to write the default-named fragment into. Defaults to `out/<module>_assomap_tikz.tex`. The wrapper is written next to the fragment, with the same name minus `_tikz` |
 | `--no-wrapper` | Write only the fragment, not the wrapper |
 
-If `-o` puts the output in another directory, the wrapper sets
-`\input@path` so the shared style files are still found. Run `pdflatex`
+If the output isn't in `tex/`, the wrapper sets `\input@path` so the
+shared style files are still found. Run `pdflatex`
 from the wrapper's directory.
 
 To support a new pipeline, add its package and workflow directory to
@@ -105,11 +108,29 @@ SCIENCE_PRODUCT_TASKS = [
 ]
 ```
 
+## Tests
+
+`example_workflow/` is a frozen copy of the MICADO spectroscopy workflow,
+used as test input so the expected output doesn't change when the live
+pipeline does. Run the tests with the Python from your `edps` environment:
+
+```sh
+/path/to/edps_env/bin/python -m pytest test
+```
+
+Tests that need `edps` or `pdflatex` are skipped if it isn't available.
+To generate the example diagram by hand:
+
+```sh
+/path/to/edps_env/bin/python generate_assomap.py example_workflow.micado_spec_wkf -i .
+```
+
 ## Files
 
 | File | Purpose |
 | --- | --- |
 | `generate_assomap.py` | The generator |
-| `*_assomap_tikz.tex` | Generated TikZ fragments |
-| `*_assomap.tex` | Generated standalone LaTeX wrappers, one per diagram |
-| `assomap_common*.tex`, `black_style.tex`, `styles_data.tex`, `normal_style.tex`, `recipe_config.tex` | Shared TikZ styles and macros |
+| `tex/assomap_common*.tex`, `tex/black_style.tex`, `tex/styles_data.tex`, `tex/normal_style.tex`, `tex/recipe_config.tex` | Shared TikZ styles and macros |
+| `example_workflow/` | Frozen MICADO spectroscopy workflow used by the tests |
+| `test/` | pytest suite (`test/fixtures/` holds extra mini-workflows) |
+| `out/` | Generated output: `*_assomap_tikz.tex` fragments, `*_assomap.tex` wrappers, PDFs and logs (gitignored) |
