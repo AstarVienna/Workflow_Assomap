@@ -1,6 +1,7 @@
 """Tests for generate_assomap.py, driven by the example MICADO workflow in
 example_workflow/ (a frozen copy, so expected labels/rows don't drift with
 the live pipeline repo)."""
+import io
 import re
 import subprocess
 import sys
@@ -25,6 +26,12 @@ EXAMPLE_TASKS = [
 def draw_lines(tex, rowkey):
     """All \\draw [match...] lines along one row (by its rowkey)."""
     return [l for l in tex.splitlines() if r"\draw [match" in l and f"__{rowkey})" in l]
+
+
+def render_wrapper(ga, *args):
+    stream = io.StringIO()
+    ga.render_wrapper(stream, *args)
+    return stream.getvalue()
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +92,7 @@ def test_parse_main_input_tags_from_example(ga):
 
 
 def test_render_wrapper_same_dir(ga, tmp_path):
-    tex = ga.render_wrapper(tmp_path / "x_assomap_tikz.tex", tmp_path / "x_assomap.tex", tmp_path)
+    tex = render_wrapper(ga, tmp_path / "x_assomap_tikz.tex", tmp_path / "x_assomap.tex", tmp_path)
     assert r"\input@path" not in tex
     assert r"\input{x_assomap_tikz}" in tex
     assert r"\documentclass[tikz, margin=5mm, dvipsnames]{standalone}" in tex
@@ -94,7 +101,7 @@ def test_render_wrapper_same_dir(ga, tmp_path):
 def test_render_wrapper_sibling_dir_is_relative(ga, tmp_path):
     (tmp_path / "out").mkdir()
     (tmp_path / "tex").mkdir()
-    tex = ga.render_wrapper(tmp_path / "out" / "x_tikz.tex", tmp_path / "out" / "x.tex", tmp_path / "tex")
+    tex = render_wrapper(ga, tmp_path / "out" / "x_tikz.tex", tmp_path / "out" / "x.tex", tmp_path / "tex")
     assert r"\def\input@path{{../tex/}}" in tex
 
 
@@ -103,7 +110,7 @@ def test_render_wrapper_far_dir_is_absolute(ga, tmp_path):
     deep.mkdir(parents=True)
     style = tmp_path / "styles"
     style.mkdir()
-    tex = ga.render_wrapper(deep / "x_tikz.tex", deep / "x.tex", style)
+    tex = render_wrapper(ga, deep / "x_tikz.tex", deep / "x.tex", style)
     assert rf"\def\input@path{{{{{style.resolve().as_posix()}/}}}}" in tex
 
 

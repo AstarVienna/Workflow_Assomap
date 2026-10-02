@@ -5,6 +5,7 @@
 Tests that need the real `edps` engine are skipped if it isn't importable.
 """
 import importlib.util
+import io
 import shutil
 import sys
 from pathlib import Path
@@ -40,13 +41,15 @@ def edps():
 def _build(ga, module_name, workflow_root):
     wkf = ga.load_workflow(module_name, workflow_root)
     columns, header, rows, edges, node, elbow_dots, extra_dots = ga.build_model(wkf)
+    stream = io.StringIO()
+    ga.render(stream, columns, header, rows, edges, node, elbow_dots, extra_dots)
     return {
         "columns": columns,
         "header": header,
         "rows": rows,
         "rows_by_key": {r["rowkey"]: r for r in rows},
         "edges": edges,
-        "tex": ga.render(columns, header, rows, edges, node, elbow_dots, extra_dots),
+        "tex": stream.getvalue(),
     }
 
 
