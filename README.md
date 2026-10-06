@@ -1,6 +1,6 @@
 # workflow_assomap
 
-Generates a TikZ **association map** ("assomap") from an
+Generates a TikZ **association map** from an
 [EDPS](https://www.eso.org/sci/software/edps.html) workflow module. The map
 shows which recipes consume which raw data, calibrations and upstream
 products.
@@ -36,8 +36,7 @@ spectroscopy (`micado.micado_spec_wkf`) and METIS IFU (`metis.metis_ifu_wkf`).
 - A LaTeX installation with TikZ (`pdflatex`).
 
 Run the script with the Python from your `edps` environment, not a generic
-`python3`. A pipeline repository's own `edps/` directory is a namespace
-package that can shadow the installed engine on the wrong interpreter.
+`python3`.
 
 ## Usage
 
