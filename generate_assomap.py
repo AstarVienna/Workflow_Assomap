@@ -65,6 +65,7 @@ import re
 import sys
 from contextlib import contextmanager
 from pathlib import Path
+from types import ModuleType
 from typing import TextIO
 
 OUT_COMMENT_RE = re.compile(r"^\s*#\s*OUT:\s*(.+?)\s*$")
@@ -111,6 +112,18 @@ def slug(name):
 
 def tex_escape(text):
     return text.replace("_", r"\_")
+
+
+def task_header_content(task):
+    """Show recipes when known, and identify tasks that do not run one."""
+    if task.command == "edps.executor.functions.empty":
+        lines = [r"\texttt{%s}" % tex_escape(task.name), r"{\scriptsize no recipe}"]
+    elif task.command_type == "function":
+        lines = [r"\texttt{%s}" % tex_escape(task.name), r"{\scriptsize Python task}"]
+        lines.extend(r"\REC{%s}" % recipe for recipe in task.command_recipes)
+    else:
+        return r"\REC{%s}" % task.command
+    return r"\shortstack{" + r"\\".join(lines) + "}"
 
 
 def parse_explicit_outputs(source_path):
@@ -217,6 +230,31 @@ DS_STYLE = {
 }
 
 
+def collect_workflow_modules(wkf):
+    """Include imported modules in the workflow's own package, in import order.
+
+    A workflow entry point can be a bundle of modules rather than defining
+    tasks itself (e.g. FORS). Avoid following imports into EDPS or unrelated
+    libraries, and visit shared/circular module imports only once.
+    """
+    modules = []
+    visited = set()
+    package = getattr(wkf, "__package__", None)
+
+    def visit(module):
+        if id(module) in visited:
+            return
+        visited.add(id(module))
+        modules.append(module)
+        for value in vars(module).values():
+            if (package and isinstance(value, ModuleType)
+                    and value.__name__.startswith(package + ".")):
+                visit(value)
+
+    visit(wkf)
+    return modules
+
+
 def collect_tasks(wkf):
     """Collect each task once, visiting producers before their consumers.
 
@@ -248,9 +286,10 @@ def collect_tasks(wkf):
         visited.add(key)
         tasks.append(task)
 
-    for value in vars(wkf).values():
-        if getattr(value, "type", None) == TaskType.TASK:
-            visit(value)
+    for module in collect_workflow_modules(wkf):
+        for value in vars(module).values():
+            if getattr(value, "type", None) == TaskType.TASK:
+                visit(value)
     return tasks
 
 
@@ -258,24 +297,26 @@ def build_model(wkf):
     from edps.generator.task import TaskType
 
     tasks = collect_tasks(wkf)
+    if not tasks:
+        raise ValueError("No EDPS tasks found in the workflow or its imported workflow modules")
+    modules = collect_workflow_modules(wkf)
     datasource_varname = {
-        id(v): n for n, v in vars(wkf).items() if getattr(v, "type", None) == TaskType.DATA_SOURCE
+        id(v): n for module in modules for n, v in vars(module).items()
+        if getattr(v, "type", None) == TaskType.DATA_SOURCE
     }
-    explicit_outputs_by_varname = parse_explicit_outputs(wkf.__file__)
-    explicit_outputs = {
-        id(v): explicit_outputs_by_varname[n]
-        for n, v in vars(wkf).items()
-        if n in explicit_outputs_by_varname
-    }
-    main_input_tag_varnames = parse_main_input_tags(wkf.__file__)
-    main_input_tags = {
-        id(v): [
-            getattr(wkf, tv).classification for tv in main_input_tag_varnames[n]
-            if hasattr(wkf, tv)
-        ]
-        for n, v in vars(wkf).items()
-        if n in main_input_tag_varnames
-    }
+    explicit_outputs = {}
+    main_input_tags = {}
+    for module in modules:
+        explicit_outputs_by_varname = parse_explicit_outputs(module.__file__)
+        main_input_tag_varnames = parse_main_input_tags(module.__file__)
+        for n, v in vars(module).items():
+            if n in explicit_outputs_by_varname:
+                explicit_outputs[id(v)] = explicit_outputs_by_varname[n]
+            if n in main_input_tag_varnames:
+                main_input_tags[id(v)] = [
+                    getattr(module, tv).classification for tv in main_input_tag_varnames[n]
+                    if hasattr(module, tv)
+                ]
 
     columns = []          # ordered list of colkeys
     colkey_of_task = {}   # id(task) -> colkey
@@ -325,13 +366,14 @@ def build_model(wkf):
 
         main_input = task.main_input
         main_input_task_row = None
+        task_content = task_header_content(task)
         if main_input.type == TaskType.DATA_SOURCE:
             header[colkey] = (
                 r"\recipebox{" + (DS_STYLE["raw"][1] % main_input.name) + "}{" +
-                r"\REC{" + task.command + "}}"
+                task_content + "}"
             )
         else:
-            header[colkey] = r"\recipenotitlebox{\REC{" + task.command + "}}"
+            header[colkey] = r"\recipenotitlebox{" + task_content + "}"
             main_input_task_row = row_by_id[id(main_input)]
             main_input_consumers.add(id(main_input))
 
@@ -600,7 +642,9 @@ def _matrix_cell(row, col, node, elbow_dots):
         return _product_cell(row, node_id)
     if col in row["dot_indices"] or (col, row["rowkey"]) in elbow_dots:
         return rf"\node ({node_id})[connection]{{}};"
-    return rf"\node ({node_id})[empty]{{}};"
+    # Headers establish column widths; unused cells need no named node.
+    # Thousands of empty nodes can exhaust TeX's memory on bundled workflows.
+    return ""
 
 
 def _write_matrix_row(stream, cells):
@@ -669,7 +713,12 @@ def _first_content(rows, style, default):
 
 
 def _write_legend(stream, header, rows):
-    example_recipe = tex_escape(next(iter(header.values())).split(r"\REC{")[1].split("}")[0])
+    example_recipe = "task"
+    for content in header.values():
+        match = re.search(r"\\REC\{([^}]*)\}", content)
+        if match:
+            example_recipe = tex_escape(match.group(1))
+            break
     example_calib = _first_content(rows, "calibproduct", r"\texttt{example}")
     example_sci = _first_content(rows, "scienceproduct", r"\texttt{example}")
     example_stat = _first_content(rows, "statcalfile", r"\STATCALIB{EXAMPLE}")
@@ -691,7 +740,7 @@ def _write_legend(stream, header, rows):
         _writelines(
             stream,
             rf"    \node (leg_recipe) [recipe]{{{example_recipe}}};",
-            r"    & \node {recipe}; \\",
+            r"    & \node {recipe / task}; \\",
             rf"    \node (leg_calproduct) [calibproduct]{{{example_calib}}};",
             r"    & \node{intermediate calib.\ product}; \\",
             rf"    \node (leg_sciproduct)[scienceproduct]{{{example_sci}}};",
@@ -801,7 +850,10 @@ def main():
     elif output.is_dir():
         output = output / default_name
 
-    columns, header, rows, edges, node, elbow_dots, extra_dots = build_model(wkf)
+    try:
+        columns, header, rows, edges, node, elbow_dots, extra_dots = build_model(wkf)
+    except ValueError as exc:
+        parser.error(str(exc))
     with output.open("w", encoding="utf-8") as stream:
         render(stream, columns, header, rows, edges, node, elbow_dots, extra_dots)
     print(f"wrote {output} ({len(columns)} columns, {len(rows)} rows, {len(edges)} connections)")

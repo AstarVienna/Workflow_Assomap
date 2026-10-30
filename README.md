@@ -17,11 +17,16 @@ spectroscopy (`micado.micado_spec_wkf`) and METIS IFU (`metis.metis_ifu_wkf`).
 - **One column per task**, in module order with input tasks visited first.
   Internal tasks created by subworkflows are included through their main
   and associated input dependencies; aliases appear only once.
+  Entry points that bundle workflow modules, such as `fors.fors_wkf`,
+  include tasks from their imported modules in the same package.
   If the first task has its own raw or reference inputs, an extra column is
   added in front of it to hold them.
 - **Header row:** each task's recipe. A raw main input is shown as a title box
   above the recipe name. When the main input is another task's product, the
   recipe box has no title and an elbow arrow runs from that product.
+  Tasks using EDPS's default `empty` function show their task name and
+  "no recipe". Python tasks show their name and any recipes declared by
+  `.with_function(..., recipes=[...])`.
 - **One row per data item** (raw input, external/static calibration, or task
   product). Each row is created where the item first appears. Every later
   consumer is marked with a dot joined to it by a line.
