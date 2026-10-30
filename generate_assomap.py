@@ -11,7 +11,7 @@ Usage:
         generate_assomap.py metis.metis_ifu_wkf -i ~/Code/pipelines/metispipeline/metisp/workflows/
 
 Layout rules (mirroring the hand-drawn example):
-  - one column per task, in the order tasks appear in the workflow module,
+  - one column per task, in module order with dependencies visited first,
     plus a leading inputs-only column if the first task has raw/reference
     associated inputs (so its own trigger arrow doesn't cross their boxes)
   - row 1: each column's trigger -- \\recipebox{RAW}{recipe} if the task's
@@ -217,10 +217,47 @@ DS_STYLE = {
 }
 
 
+def collect_tasks(wkf):
+    """Collect each task once, visiting producers before their consumers.
+
+    Subworkflows can keep intermediate tasks local to their factory function.
+    Follow both main and associated inputs to find those tasks as well as
+    tasks exposed in the module. Module order is preserved wherever inputs
+    already precede their consumers.
+    """
+    from edps.generator.task import TaskType
+
+    tasks = []
+    visited = set()
+    visiting = set()
+
+    def visit(task):
+        key = id(task)
+        if key in visited:
+            return
+        if key in visiting:
+            raise ValueError(f"Cyclic task dependency involving {task.name!r}")
+        visiting.add(key)
+        inputs = [task.main_input]
+        inputs.extend(assoc.input_task for group in task.associated_input_groups
+                      for assoc in group.associated_inputs)
+        for item in inputs:
+            if item.type == TaskType.TASK:
+                visit(item)
+        visiting.remove(key)
+        visited.add(key)
+        tasks.append(task)
+
+    for value in vars(wkf).values():
+        if getattr(value, "type", None) == TaskType.TASK:
+            visit(value)
+    return tasks
+
+
 def build_model(wkf):
     from edps.generator.task import TaskType
 
-    tasks = [v for v in vars(wkf).values() if getattr(v, "type", None) == TaskType.TASK]
+    tasks = collect_tasks(wkf)
     datasource_varname = {
         id(v): n for n, v in vars(wkf).items() if getattr(v, "type", None) == TaskType.DATA_SOURCE
     }

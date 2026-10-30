@@ -14,7 +14,9 @@ spectroscopy (`micado.micado_spec_wkf`) and METIS IFU (`metis.metis_ifu_wkf`).
 
 ## What the diagram shows
 
-- **One column per task**, in the order tasks appear in the workflow module.
+- **One column per task**, in module order with input tasks visited first.
+  Internal tasks created by subworkflows are included through their main
+  and associated input dependencies; aliases appear only once.
   If the first task has its own raw or reference inputs, an extra column is
   added in front of it to hold them.
 - **Header row:** each task's recipe. A raw main input is shown as a title box
