@@ -707,15 +707,77 @@ def _write_extra_dots(stream, extra_dots):
     _writelines(stream, "")
 
 
-def _write_edges(stream, edges):
+def edge_crossings(columns, rows, edges, node, elbow_dots, extra_dots):
+    """Columns crossed without a junction, for each edge's horizontal part.
+
+    Row/tag positions retain the order of the rendered stacks without
+    guessing their height. Only actual vertical spans count as crossings.
+    """
+    positions = {node(col, "raw"): (-1, 0) for col in columns}
+    junctions = set()
+    row_positions = {}
+    for i, row in enumerate(rows):
+        rowkey = row["rowkey"]
+        row_positions[rowkey] = (i, 0)
+        for idx in range(len(row["content_lines"])):
+            name = node(row["source_col"], rowkey)
+            positions[name if idx == 0 else f"{name}_{idx + 1}"] = (i, idx)
+        for col in row["dot_indices"]:
+            positions[node(col, rowkey)] = (i, 0)
+            junctions.add((col, (i, 0)))
+    for col, rowkey in elbow_dots:
+        positions[node(col, rowkey)] = row_positions[rowkey]
+        junctions.add((col, row_positions[rowkey]))
+    for dest, src, _ in extra_dots:
+        positions[dest] = positions[src]
+        junctions.add((node_col(dest), positions[src]))
+
+    verticals = {}
+    for kind, a, b, _ in edges:
+        if kind == "arrow":
+            verticals.setdefault(node_col(b), []).append(sorted((positions[a], positions[b])))
+
+    col_indices = {col: i for i, col in enumerate(columns)}
+    crossings = []
+    for _, a, b, _ in edges:
+        start, end = col_indices[node_col(a)], col_indices[node_col(b)]
+        step = 1 if end > start else -1
+        height = positions[a]
+        crossings.append([
+            columns[i] for i in range(start + step, end, step)
+            if (columns[i], height) not in junctions
+            and any(top < height < bottom for top, bottom in verticals.get(columns[i], []))
+        ] if start != end else [])
+    return crossings
+
+
+def _write_edges(stream, edges, columns, rows, node, elbow_dots, extra_dots):
+    crossings = edge_crossings(columns, rows, edges, node, elbow_dots, extra_dots)
     _writelines(stream, "  %% Connections")
+    # Draw vertical spans first so the white underlay of each bridge can
+    # separate the horizontal curve from the vertical line beneath it.
     for kind, a, b, dashed in edges:
-        style = "arrow" if kind == "arrow" else "match"
-        opts = style + (", dashed" if dashed else "")
-        # same column: raw header or topmost input dot -> product, straight down.
-        # different column: product -> next task's main input, elbow bend.
-        connector = " -- " if kind == "match" or node_col(a) == node_col(b) else " -| "
-        _writelines(stream, rf"  \draw [{opts}] ({a}){connector}({b});")
+        if kind == "arrow":
+            start = a if node_col(a) == node_col(b) else f"{a} -| {b}"
+            opts = "arrow" + (", dashed" if dashed else "")
+            _writelines(stream, rf"  \draw [{opts}] ({start}) -- ({b});")
+    for (kind, a, b, dashed), bridges in zip(edges, crossings):
+        if node_col(a) == node_col(b):
+            continue
+        opts = "match" + (", dashed" if dashed else "")
+        if bridges:
+            # Shortening just the underlay protects endpoint dots and boxes.
+            opts += (", preaction={draw=white, solid, line width=3.2pt, "
+                     "shorten <=1mm, shorten >=1mm, -}")
+        forward = columns.index(node_col(a)) < columns.index(node_col(b))
+        shift = "-1.5mm" if forward else "1.5mm"
+        angles = "180, end angle=0" if forward else "0, end angle=180"
+        path = f"({a})"
+        for col in bridges:
+            path += (rf" -- ($({a} -| {node(col, 'raw')}) + ({shift},0)$)"
+                     rf" arc[start angle={angles}, radius=1.5mm]")
+        end = b if kind == "match" else f"{a} -| {b}"
+        _writelines(stream, rf"  \draw [{opts}] {path} -- ({end});")
     _writelines(stream, "")
 
 
@@ -781,7 +843,7 @@ def render(stream: TextIO, columns, header, rows, edges, node, elbow_dots, extra
     with _tex_group(stream, begin, end):
         _write_recipe_matrix(stream, columns, header, rows, node, elbow_dots)
         _write_extra_dots(stream, extra_dots)
-        _write_edges(stream, edges)
+        _write_edges(stream, edges, columns, rows, node, elbow_dots, extra_dots)
         _write_legend(stream, header, rows)
     _writelines(stream, r"\input{normal_style}")
 

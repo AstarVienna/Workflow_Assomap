@@ -34,6 +34,8 @@ spectroscopy (`micado.micado_spec_wkf`) and METIS IFU (`metis.metis_ifu_wkf`).
   consumer is marked with a dot joined to it by a line.
 - **Solid** lines and arrows are required inputs, and **dashed** ones are
   optional (`min_ret=0`).
+  Horizontal lines jump over vertical lines with a small semicircle where
+  there is no connection dot; dotted junctions remain connected.
 - Product boxes are coloured as **science products** if nothing consumes them,
   or if the task name matches a pattern in `SCIENCE_PRODUCT_TASKS`.
   All other products are drawn as **intermediate calibration products**.
