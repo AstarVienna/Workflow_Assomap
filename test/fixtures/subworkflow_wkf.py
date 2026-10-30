@@ -26,6 +26,7 @@ def make_subworkflow():
     final = (task("fixture_final")
              .with_recipe("fixture_final_recipe")
              .with_main_input(prepare)
+             .with_associated_input(base, [master_sflat_class])
              .with_alternative_associated_inputs(calibrations)
              .build())
     return final, base

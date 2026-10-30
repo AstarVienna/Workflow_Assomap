@@ -444,8 +444,9 @@ def build_model(wkf):
                     row["consumers"].append((colkey, groups))
 
         own_row, _ = get_or_create_row(task, True, colkey)
-        edges.append(("arrow", node(colkey, "raw"), node(colkey, own_row["rowkey"]), False))
-        if main_input_task_row is not None:
+        if main_input_task_row is None:
+            edges.append(("arrow", node(colkey, "raw"), node(colkey, own_row["rowkey"]), False))
+        else:
             main_input_links.append((colkey, own_row, main_input_task_row, id(task)))
 
     # decide calibproduct vs scienceproduct for task-output rows, and content:
@@ -517,17 +518,9 @@ def build_model(wkf):
             src_node = stack_node(main_input_task_row["source_col"], main_input_task_row["rowkey"], idx)
             edges.append(("arrow", src_node, dest_node, False))
             if idx == 0:
-                # Point straight at this column's own product, not at its
-                # header: the header sits *above* rows this column shares
-                # with earlier columns' rows, so an arrow ending there would
-                # run back up through, and overlap in the opposite direction
-                # from, the header->product arrow above -- looking like a
-                # double-headed arrow. Ending both arrows at the same
-                # (downstream) product keeps every arrow pointing the same
-                # way: down, into a product. The "-|" elbow bends through
-                # this column at the source's row height before heading
-                # down; mark that bend with a connection dot too, same as
-                # any other consumed row.
+                # The "-|" elbow bends through this column at the source's
+                # row height before heading down into the consumer's product.
+                # Mark that bend with a connection dot, like other inputs.
                 elbow_dots.add((colkey, main_input_task_row["rowkey"]))
             else:
                 extra_dots.append((
@@ -592,6 +585,26 @@ def build_model(wkf):
                     # source tag node instead, combined with this column's
                     # own x position (via the `calc` library's "-|").
                     extra_dots.append((this_node, src_tag_node, node(colkey, "raw")))
+
+    # Without a raw-input header, the vertical processing line starts at the
+    # highest input dot. An associated input can sit above the main input;
+    # stacked output tags can also put that dot below their primary row node.
+    row_positions = {row["rowkey"]: i for i, row in enumerate(rows)}
+    source_positions = {
+        stack_node(row["source_col"], row["rowkey"], idx): (i, idx)
+        for i, row in enumerate(rows) for idx in range(len(row["content_lines"]))
+    }
+    dot_positions = {
+        node(colkey, row["rowkey"]): (i, 0)
+        for i, row in enumerate(rows) for colkey in row["dot_indices"]
+    }
+    dot_positions.update({node(colkey, rowkey): (row_positions[rowkey], 0)
+                          for colkey, rowkey in elbow_dots})
+    dot_positions.update({dest: source_positions[src] for dest, src, _ in extra_dots})
+    for colkey, own_row, _, _ in main_input_links:
+        top_dot = min((dot for dot in dot_positions if node_col(dot) == colkey),
+                      key=dot_positions.__getitem__)
+        edges.append(("arrow", top_dot, node(colkey, own_row["rowkey"]), False))
 
     return columns, header, rows, edges, node, elbow_dots, extra_dots
 
@@ -699,7 +712,7 @@ def _write_edges(stream, edges):
     for kind, a, b, dashed in edges:
         style = "arrow" if kind == "arrow" else "match"
         opts = style + (", dashed" if dashed else "")
-        # same column: trigger -> own product, straight down.
+        # same column: raw header or topmost input dot -> product, straight down.
         # different column: product -> next task's main input, elbow bend.
         connector = " -- " if kind == "match" or node_col(a) == node_col(b) else " -| "
         _writelines(stream, rf"  \draw [{opts}] ({a}){connector}({b});")

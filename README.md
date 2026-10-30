@@ -24,6 +24,8 @@ spectroscopy (`micado.micado_spec_wkf`) and METIS IFU (`metis.metis_ifu_wkf`).
 - **Header row:** each task's recipe. A raw main input is shown as a title box
   above the recipe name. When the main input is another task's product, the
   recipe box has no title and an elbow arrow runs from that product.
+  Vertical processing lines reach the header only for raw main inputs;
+  otherwise they start at the highest input connection dot.
   Tasks using EDPS's default `empty` function show their task name and
   "no recipe". Python tasks show their name and any recipes declared by
   `.with_function(..., recipes=[...])`.

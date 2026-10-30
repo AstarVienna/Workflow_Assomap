@@ -135,6 +135,15 @@ def test_headers(example_model):
     assert header["micado_spec_mf_model"] == r"\recipenotitlebox{\REC{mcd_spec_mf_model}}"
 
 
+def test_only_raw_main_inputs_have_header_arrows(example_model):
+    header_columns = {col for col, content in example_model["header"].items()
+                      if content.startswith(r"\recipebox{")}
+    arrow_columns = {a.removeprefix("REC").removesuffix("__raw")
+                     for kind, a, _, _ in example_model["edges"]
+                     if kind == "arrow" and a.endswith("__raw")}
+    assert arrow_columns == header_columns
+
+
 @pytest.mark.parametrize("task, tags", [
     # (1) tags from downstream consumers' classification rules
     ("micado_gen_dark", ["MASTER_DARK"]),
@@ -256,6 +265,14 @@ def test_internal_subworkflow_tasks_and_forward_references(ga, edps):
             "RECfixture_final__Dfixture_final", False) in model["edges"]
     assert ("match", "RECfixture_geometry__Dfixture_geometry",
             "RECfixture_final__Dfixture_geometry", False) in model["edges"]
+    # The associated base product is above the main-input prepare product.
+    assert ("arrow", "RECfixture_final__Dfixture_base",
+            "RECfixture_final__Dfixture_final", False) in model["edges"]
+    assert r"\draw [arrow] (RECfixture_final__Dfixture_base) -- (RECfixture_final__Dfixture_final);" in model["tex"]
+    assert not any(a == "RECfixture_final__raw" for _, a, _, _ in model["edges"])
+    # A task with only its main-input dot starts there.
+    assert ("arrow", "RECfixture_prepare__Dfixture_base",
+            "RECfixture_prepare__Dfixture_prepare", False) in model["edges"]
 
 
 @pytest.mark.parametrize("input_kind", ["main", "associated"])
@@ -294,6 +311,9 @@ def test_bundled_workflow_tasks_labels_and_main_input_tags(ga, edps):
         ("arrow", "RECbundled_producer__Dbundled_producer_3",
          "RECbundled_first__Dbundled_first", False),
     ]
+    # Only the third stacked tag is consumed as the main input.
+    assert ("arrow", "RECbundled_first__Dbundled_producer_3",
+            "RECbundled_first__Dbundled_first", False) in model["edges"]
 
 
 def test_module_discovery_ignores_external_imports_and_handles_cycles(ga):
