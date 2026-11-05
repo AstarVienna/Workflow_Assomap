@@ -61,6 +61,44 @@ def test_classify_datasource(ga, varname, expected):
     assert ga.classify_datasource(varname) == expected
 
 
+@pytest.mark.parametrize("tag_junction", [True, False])
+def test_crossings_respect_vertical_spans_and_junctions(ga, tag_junction):
+    columns = list("ABCDE")
+
+    def node(col, row):
+        return f"REC{col}__{row}"
+
+    def row(key, col, dots=(), tags=1):
+        return {"rowkey": key, "source_col": col, "dot_indices": set(dots),
+                "content_lines": [("product", False)] * tags}
+
+    rows = [row("early", "A", "DE", tags=2), row("start", "C", "B"),
+            row("late", "A", "E"), row("end_C", "C"), row("end_B", "B"),
+            row("end_D", "D"), row("end_E", "E")]
+    extra_dots = [(node("E", "early_2"), node("A", "early_2"), node("E", "raw"))]
+    if tag_junction:
+        extra_dots.append((node("D", "early_2"), node("A", "early_2"), node("D", "raw")))
+    edges = [
+        ("arrow", node("B", "start"), node("B", "end_B"), False),
+        ("arrow", node("C", "start"), node("C", "end_C"), False),
+        ("arrow", node("D", "raw"), node("D", "end_D"), False),
+        ("match", node("A", "early"), node("E", "early"), False),
+        ("match", node("A", "early_2"), node("E", "early_2"), False),
+        ("match", node("A", "late"), node("E", "late"), True),
+        ("arrow", node("A", "late"), node("E", "end_E"), False),
+        ("match", node("E", "late"), node("A", "late"), False),
+    ]
+    assert ga.edge_crossings(columns, rows, edges, node, set(), extra_dots) == [
+        [], [], [], [], [] if tag_junction else ["D"],
+        ["B", "C", "D"], ["B", "C", "D"], ["D", "C", "B"],
+    ]
+    stream = io.StringIO()
+    ga._write_edges(stream, edges, columns, rows, node, set(), extra_dots)
+    dashed_line = next(line for line in stream.getvalue().splitlines()
+                       if r"\draw [match, dashed" in line)
+    assert dashed_line.count("arc[") == 3
+
+
 def test_parse_explicit_outputs_from_example(ga):
     outputs = ga.parse_explicit_outputs(EXAMPLE_SOURCE)
     assert outputs == {
