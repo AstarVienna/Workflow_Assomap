@@ -5,7 +5,7 @@ import io
 import re
 import subprocess
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -275,6 +275,69 @@ def test_cyclic_task_dependencies_have_clear_error(ga, edps, input_kind):
 
 
 # ---------------------------------------------------------------------------
+# Bundled workflows importing multiple modules
+# ---------------------------------------------------------------------------
+
+def test_bundled_workflow_tasks_labels_and_main_input_tags(ga, edps):
+    model = _build(ga, "bundled_workflow", FIXTURES_DIR)
+    assert model["columns"] == ["bundled_producer", "bundled_first", "bundled_second"]
+    rows = model["rows_by_key"]
+    assert rows["Draw_sflat_slit"]["style"] == "rawinput"
+    assert rows["Dbundled_producer"]["content_tags"] == [
+        "EXTRA_PRODUCT", "MASTER_DARK", "MASTER_SFLAT",
+    ]
+    assert rows["Dbundled_first"]["content_tags"] == ["FIRST_ONLY"]
+    assert rows["Dbundled_second"]["content_tags"] == ["SECOND_ONLY"]
+    main_arrows = [e for e in model["edges"] if e[0] == "arrow"
+                   and e[1].startswith("RECbundled_producer__Dbundled_producer")]
+    assert main_arrows == [
+        ("arrow", "RECbundled_producer__Dbundled_producer_3",
+         "RECbundled_first__Dbundled_first", False),
+    ]
+
+
+def test_module_discovery_ignores_external_imports_and_handles_cycles(ga):
+    root = ModuleType("bundle.entry")
+    root.__package__ = "bundle"
+    child = ModuleType("bundle.child")
+    external = ModuleType("other.workflow")
+    root.child = child
+    root.external = external
+    root.alias = child
+    child.root = root
+    assert ga.collect_workflow_modules(root) == [root, child]
+
+
+def test_empty_workflow_has_clear_error(ga, edps):
+    with pytest.raises(ValueError, match="No EDPS tasks found"):
+        ga.build_model(ModuleType("empty_workflow"))
+
+
+def test_nonrecipe_headers(ga, edps):
+    model = _build(ga, "nonrecipe_wkf", FIXTURES_DIR)
+    assert "edps.executor.functions" not in model["tex"]
+    association = model["header"]["fixture_association"]
+    assert r"\texttt{fixture\_association}" in association
+    assert "no recipe" in association
+    assert r"\REC{" not in association
+    wrapper = model["header"]["fixture_wrapper"]
+    assert "Python task" in wrapper
+    assert r"\REC{wrapped_first}" in wrapper
+    assert r"\REC{wrapped_second}" in wrapper
+    forward = model["header"]["fixture_forward"]
+    assert r"\texttt{fixture\_forward}" in forward
+    assert "Python task" in forward
+    assert "no recipe" not in forward
+    assert r"\REC{" not in forward
+
+
+def test_legend_without_recipe_headers(ga):
+    stream = io.StringIO()
+    ga._write_legend(stream, {"INPUTS": "", "association": "no recipe"}, [])
+    assert r"\node (leg_recipe) [recipe]{task};" in stream.getvalue()
+
+
+# ---------------------------------------------------------------------------
 # Command line
 # ---------------------------------------------------------------------------
 
@@ -317,14 +380,18 @@ def test_cli_unknown_package_needs_input_flag(tmp_path):
 # LaTeX compile
 # ---------------------------------------------------------------------------
 
-def test_wrapper_compiles(edps, pdflatex, tmp_path):
-    result = run_cli(EXAMPLE_MODULE, "-i", str(REPO_ROOT), "-o", str(tmp_path))
+@pytest.mark.parametrize("module, workflow_root, stem", [
+    (EXAMPLE_MODULE, REPO_ROOT, "micado_spec"),
+    ("nonrecipe_wkf", FIXTURES_DIR, "nonrecipe"),
+])
+def test_wrapper_compiles(edps, pdflatex, tmp_path, module, workflow_root, stem):
+    result = run_cli(module, "-i", str(workflow_root), "-o", str(tmp_path))
     assert result.returncode == 0, result.stderr
     tex = subprocess.run(
-        [pdflatex, "-interaction=nonstopmode", "-halt-on-error", "micado_spec_assomap.tex"],
+        [pdflatex, "-interaction=nonstopmode", "-halt-on-error", f"{stem}_assomap.tex"],
         cwd=tmp_path, capture_output=True, text=True,
     )
-    log = (tmp_path / "micado_spec_assomap.log").read_text(errors="replace")
+    log = (tmp_path / f"{stem}_assomap.log").read_text(errors="replace")
     errors = [l for l in log.splitlines() if l.startswith("!")]
     assert tex.returncode == 0 and not errors, "\n".join(errors) or tex.stdout[-2000:]
-    assert (tmp_path / "micado_spec_assomap.pdf").stat().st_size > 0
+    assert (tmp_path / f"{stem}_assomap.pdf").stat().st_size > 0
