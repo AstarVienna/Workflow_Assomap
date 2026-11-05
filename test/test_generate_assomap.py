@@ -5,10 +5,11 @@ import io
 import re
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 
-from conftest import EXAMPLE_MODULE, EXAMPLE_SOURCE, REPO_ROOT, SCRIPT
+from conftest import EXAMPLE_MODULE, EXAMPLE_SOURCE, FIXTURES_DIR, REPO_ROOT, SCRIPT, _build
 
 EXAMPLE_TASKS = [
     "micado_gen_dark",
@@ -234,6 +235,43 @@ def test_inputs_column_added_for_first_task_raw_inputs(inputs_first_model, ga):
     assert rows["Dpersistence_map"]["source_col"] == ga.INPUTS_COLKEY
     # no trigger arrow for the inputs-only column
     assert not any(e[1] == f"REC{ga.INPUTS_COLKEY}__raw" for e in inputs_first_model["edges"])
+
+
+# ---------------------------------------------------------------------------
+# Subworkflows with tasks absent from the module namespace
+# ---------------------------------------------------------------------------
+
+def test_internal_subworkflow_tasks_and_forward_references(ga, edps):
+    model = _build(ga, "subworkflow_wkf", FIXTURES_DIR)
+    assert model["columns"] == [
+        "fixture_base", "fixture_prepare", "fixture_geometry", "fixture_final",
+    ]
+    rows = model["rows_by_key"]
+    assert rows["Dfixture_geometry"]["source_col"] == "fixture_geometry"
+    assert rows["Dfixture_geometry"]["content_tags"] == ["MASTER_SFLAT"]
+    assert rows["Dfixture_geometry"]["style"] == "calibproduct"
+    assert ("arrow", "RECfixture_base__Dfixture_base",
+            "RECfixture_prepare__Dfixture_prepare", False) in model["edges"]
+    assert ("arrow", "RECfixture_prepare__Dfixture_prepare",
+            "RECfixture_final__Dfixture_final", False) in model["edges"]
+    assert ("match", "RECfixture_geometry__Dfixture_geometry",
+            "RECfixture_final__Dfixture_geometry", False) in model["edges"]
+
+
+@pytest.mark.parametrize("input_kind", ["main", "associated"])
+def test_cyclic_task_dependencies_have_clear_error(ga, edps, input_kind):
+    from edps.generator.task import TaskType
+
+    task = SimpleNamespace(name="cyclic", type=TaskType.TASK,
+                           main_input=SimpleNamespace(type=TaskType.DATA_SOURCE),
+                           associated_input_groups=[])
+    if input_kind == "main":
+        task.main_input = task
+    else:
+        task.associated_input_groups = [SimpleNamespace(
+            associated_inputs=[SimpleNamespace(input_task=task)])]
+    with pytest.raises(ValueError, match="Cyclic task dependency.*cyclic"):
+        ga.collect_tasks(SimpleNamespace(task=task))
 
 
 # ---------------------------------------------------------------------------
